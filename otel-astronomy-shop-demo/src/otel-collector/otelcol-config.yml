@@ -277,7 +277,7 @@ service:
                 # replace with your observability meta monitoring backend
                 endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/metrics" # z.B. otlp-gateway-prod-eu-west-2.grafana.net:4317
                 headers:
-                  authorization: Basic <BASE64-TOKEN>
+                  authorization: Basic ${GCLOUD_BASIC_AUTH_BASE64}
     traces:
       processors:
         - batch:
@@ -287,7 +287,7 @@ service:
                 # replace with your observability meta monitoring backend
                 endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces" # z.B. otlp-gateway-prod-eu-west-2.grafana.net:4317
                 headers:
-                  authorization: Basic <BASE64-TOKEN>
+                  authorization: Basic ${GCLOUD_BASIC_AUTH_BASE64}
     
     logs:
       processors:
@@ -298,5 +298,5 @@ service:
                 # replace with your observability meta monitoring backend
                 endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/logs" # z.B. otlp-gateway-prod-eu-west-2.grafana.net:4317
                 headers:
-                  authorization: Basic <BASE64-TOKEN>
+                  authorization: Basic ${GCLOUD_BASIC_AUTH_BASE64}
  
