@@ -1,0 +1,150 @@
+livedebugging {
+  enabled = true
+}
+
+local.file_match "labeled_logs" {
+  path_targets = [
+    {
+      "__path__"    = "/meinpc/var/log/dpkg.log",
+      "__address__" = "localhost",
+      "instance"    = "schulungs-vm-01",
+      "job"         = "dpkg",
+      "service"     = "package-manager",
+    },
+    {
+      "__path__"    = "/meinpc/var/log/xrdp.log",
+      "__address__" = "localhost",
+      "instance"    = "schulungs-vm-01",
+      "job"         = "journal",
+      "service"     = "xrdp",
+    },
+    {
+      "__path__"    = "/meinpc/var/log/schulung.log",
+      "__address__" = "localhost",
+      "instance"    = "schulungs-vm-01",
+      "job"         = "schulung-log",
+      "service"     = "sascha-manuell",
+    },
+  ]
+  sync_period = "5s"
+}
+ 
+loki.source.file "log_scrape" {
+  targets    = local.file_match.labeled_logs.targets
+  forward_to = [loki.process.exclude_debug.receiver]
+}
+
+loki.process "exclude_debug" {
+  forward_to = [loki.write.default.receiver]
+  
+  stage.match {
+    selector = "{job=\"schulung-log\"}"
+    
+    stage.drop {
+      expression = ".*\\[DEBUG\\].*"
+    }
+  }
+}
+
+
+discovery.docker "flog_scrape" {
+	host             = "unix:///var/run/docker.sock"
+	refresh_interval = "5s"
+}
+ 
+discovery.relabel "flog_scrape" {
+  targets = []
+  
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+ 
+loki.source.docker "flog_scrape" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.docker.flog_scrape.targets
+  forward_to       = [loki.write.default.receiver]
+  relabel_rules    = discovery.relabel.flog_scrape.rules
+  refresh_interval = "5s"
+}
+ 
+loki.write "default" {
+  endpoint {
+    url       = "http://gateway:3100/loki/api/v1/push"
+    tenant_id = "tenant1"
+  }
+  external_labels = {}
+}
+
+
+// Prometheus
+// prometheus.exporter.unix "local_system" { }
+
+// 1. HTTP-Endpunkt auf Port 12345 abfragen
+prometheus.scrape "alloy_self_monitoring" {
+  targets = [
+    {
+      __address__ = "localhost:12345",
+      job         = "alloy.linux",
+      instance    = "local-node",
+    },
+    {
+      __address__ = "localhost:9216",
+      job         = "mongodb.linux",
+      instance    = "mongodb-01",
+    },
+    {
+      __address__ = "localhost:3200",
+      job         = "tempo.linux",
+      instance    = "tempo-01",
+    },
+  ]
+
+  // Standardmäßig fragt Alloy "/metrics" alle 60s ab
+  metrics_path    = "/metrics"
+  scrape_interval = "15s"
+
+  // Weiterleitung an den Remote-Write-Puffer
+  forward_to = [prometheus.remote_write.metrics_backend.receiver]
+}
+
+// 2. Metriken an ein Ziel-Backend pushen
+prometheus.remote_write "metrics_backend" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+
+    // Optional: Authentifizierung für Mimir oder Grafana Cloud
+    // basic_auth {
+    //   username = "12345"
+    //   password = "eyJrZXkiOi..."
+    // }
+  }
+}
+
+
+
+// Tracing
+
+otelcol.receiver.otlp "otlp_receiver" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.grafanaonpremise.input,]
+  }
+}
+
+otelcol.exporter.otlp "grafanaonpremise" {
+  client {
+    endpoint = "http://tempo:4318"
+    tls {
+			insecure = true
+		}
+  }
+}
