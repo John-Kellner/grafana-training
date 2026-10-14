@@ -33,3 +33,14 @@ services:
       - ./bin:/alloy/bin/:ro
       - ./containers/srv-app03/conf/:/alloy/conf/:ro
       - ./containers/srv-app03/custom-data/:/alloy/custom-data/:ro
+  srv-app04:
+    image: debian:latest
+    command: "/alloy/bin/alloy-linux-amd64 run /alloy/conf/"
+    env_file:
+      - ./.env
+    ports:
+      - 4003:12345
+    volumes:
+      - ./bin:/alloy/bin/:ro
+      - ./containers/srv-app04/conf/:/alloy/conf/:ro
+      - ./containers/srv-app04/custom-data/:/alloy/custom-data/:ro
