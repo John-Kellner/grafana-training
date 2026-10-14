@@ -1,0 +1,35 @@
+
+services:
+  srv-app01:
+    image: debian:latest
+    command: "/alloy/bin/alloy-linux-amd64 run /alloy/conf/"
+    env_file:
+      - ./.env
+    ports:
+      - 4000:12345
+    volumes:
+      - ./bin:/alloy/bin/:ro
+      - ./containers/srv-app01/conf/:/alloy/conf/:ro
+      - ./containers/srv-app01/custom-data/:/alloy/custom-data/:ro
+  srv-app02:
+    image: debian:latest
+    command: "/alloy/bin/alloy-linux-amd64 run /alloy/conf/"
+    env_file:
+      - ./.env
+    ports:
+      - 4001:12345
+    volumes:
+      - ./bin:/alloy/bin/:ro
+      - ./containers/srv-app02/conf/:/alloy/conf/:ro
+      - ./containers/srv-app02/custom-data/:/alloy/custom-data/:ro
+  srv-app03:
+    image: debian:latest
+    command: "/alloy/bin/alloy-linux-amd64 run /alloy/conf/"
+    env_file:
+      - ./.env
+    ports:
+      - 4002:12345
+    volumes:
+      - ./bin:/alloy/bin/:ro
+      - ./containers/srv-app03/conf/:/alloy/conf/:ro
+      - ./containers/srv-app03/custom-data/:/alloy/custom-data/:ro
